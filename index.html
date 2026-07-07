@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quote Builder — Operating Rental Proposals</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@400;600;700&display=swap');
+  :root {
+    --gold: #C9A84C; --gold-light: #E8C96B; --gold-dim: #8a6f2e;
+    --black: #080808; --charcoal: #141414; --panel: #1c1c1c;
+    --border: #2e2e2e; --white: #f5f0e8; --text-muted: #888;
+    --brand: #C9A84C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--black); color: var(--white); font-family: 'Barlow', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+  header { background: var(--charcoal); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-bar { width: 4px; height: 32px; background: var(--gold); border-radius: 2px; }
+  .brand-name { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700; color: var(--gold); letter-spacing: 0.05em; }
+  .brand-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; }
+  .header-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.15em; color: var(--text-muted); text-transform: uppercase; }
+  .layout { display: grid; grid-template-columns: 420px 1fr; flex: 1; min-height: calc(100vh - 64px); }
+  .form-panel { background: var(--charcoal); border-right: 1px solid var(--border); overflow-y: auto; padding: 36px 32px; }
+  .panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; display: flex; align-items: center; gap: 10px; }
+  .panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .field-group { margin-bottom: 28px; }
+  .group-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .field { margin-bottom: 14px; }
+  label { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  input, select, textarea { width: 100%; background: var(--panel); border: 1px solid var(--border); color: var(--white); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 10px 14px; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.12); }
+  input::placeholder, textarea::placeholder { color: #444; }
+  select option { background: var(--panel); }
+  input[type="file"] { padding: 8px 10px; font-size: 12px; cursor: pointer; }
+  input[type="file"]::file-selector-button { background: var(--gold-dim); border: none; color: var(--white); padding: 6px 12px; border-radius: 3px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; cursor: pointer; margin-right: 12px; }
+  input[type="file"]::file-selector-button:hover { background: var(--gold); color: var(--black); }
+  .logo-preview-wrap { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 10px; background: var(--panel); border: 1px dashed var(--border); border-radius: 4px; min-height: 50px; }
+  .logo-preview-wrap.empty { color: var(--text-muted); font-size: 11px; font-style: italic; justify-content: center; }
+  .logo-preview-img { max-width: 120px; max-height: 50px; object-fit: contain; background: white; padding: 4px; border-radius: 3px; }
+  .logo-clear-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; }
+  .logo-clear-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .btn-row-single { grid-template-columns: 1fr; }
+  .btn-row-single .generate-btn { padding: 18px 16px; font-size: 14px; letter-spacing: 0.2em; }
+  .generate-btn, .send-btn { background: var(--gold); color: var(--black); border: none; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; padding: 16px 12px; border-radius: 4px; cursor: pointer; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.2; text-align: center; }
+  .send-btn { background: var(--charcoal); color: var(--gold); border: 1px solid var(--gold); }
+  .generate-btn:hover { background: var(--gold-light); }
+  .send-btn:hover { background: var(--gold); color: var(--black); }
+  .generate-btn:active, .send-btn:active { transform: scale(0.99); }
+  .generate-btn svg, .send-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .preview-panel { background: #111; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 20px; overflow-y: auto; }
+  .preview-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; align-self: flex-start; margin-left: 20px; }
+  .quote-card { width: 100%; max-width: 600px; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); font-family: 'Barlow', sans-serif; color: #1a1a1a; }
+  .qc-top-bar { height: 6px; background: var(--gold); }
+  .qc-header { background: white; padding: 20px 28px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--gold); gap: 16px; }
+  .qc-supplier-block { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+  .qc-supplier-logo { max-height: 42px; max-width: 170px; object-fit: contain; align-self: flex-start; }
+  .qc-supplier-logo[hidden] { display: none; }
+  .qc-supplier-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 700; color: #1a1a1a; letter-spacing: 0.02em; }
+  .qc-meta { text-align: right; flex-shrink: 0; }
+  .qc-meta-item { font-size: 10px; color: #555; font-weight: 600; line-height: 1.9; }
+  .qc-meta-val { color: #1a1a1a; font-weight: 400; }
+  .qc-doc-band { background: #1a1a1a; padding: 12px 28px; }
+  .qc-doc-title { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-weight: 700; color: var(--gold); letter-spacing: 0.05em; }
+  .qc-body { padding: 24px 28px; background: #fafafa; }
+  .qc-greeting { font-size: 13px; color: #1a1a1a; margin-bottom: 4px; }
+  .qc-tagline { font-size: 11px; color: #555; font-weight: 500; margin-bottom: 22px; }
+  .qc-section { margin-bottom: 20px; }
+  .qc-section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #1a1a1a; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+  .qc-section-title::before { content: ''; width: 3px; height: 14px; background: var(--gold); border-radius: 2px; flex-shrink: 0; }
+  .qc-info-row { display: flex; font-size: 12px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; align-items: flex-start; }
+  .qc-info-row:last-child { border-bottom: none; }
+  .qc-info-label { color: #666; font-weight: 600; width: 130px; flex-shrink: 0; }
+  .qc-info-val { color: #1a1a1a; white-space: pre-wrap; flex: 1; word-break: break-word; }
+  .qc-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 4px; }
+  .qc-price-card { background: #f0f0f0; border-radius: 4px; padding: 14px 8px; text-align: center; border: 1px solid #ddd; }
+  .qc-price-term { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.15em; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+  .qc-price-amount { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+  .qc-benefits { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 4px; }
+  .qc-benefit { font-size: 10px; line-height: 1.4; }
+  .qc-benefit-title { color: #333; font-weight: 600; display: block; margin-bottom: 2px; }
+  .qc-benefit-desc { color: #888; font-size: 9px; }
+  .qc-notes { background: #f5f5f5; border-radius: 4px; padding: 14px 16px; margin-top: 4px; border-left: 3px solid #C9A84C; }
+  .qc-notes-title { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.15em; color: #8a6f2e; text-transform: uppercase; margin-bottom: 10px; }
+  .qc-notes-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+  .qc-note-item { font-size: 9.5px; color: #666; line-height: 1.4; }
+  .qc-signature-section { padding: 20px 28px; background: white; border-top: 2px solid #eee; }
+  .qc-sig-title { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #1a1a1a; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid #e0e0e0; }
+  .qc-sig-title::before { content: ''; width: 3px; height: 14px; background: #C9A84C; border-radius: 2px; flex-shrink: 0; }
+  .qc-sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }
+  .qc-sig-block { display: flex; flex-direction: column; }
+  .qc-sig-label { font-size: 8.5px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .qc-sig-line { border-bottom: 1px solid #333; height: 30px; }
+  .qc-sig-line-light { border-bottom: 1px solid #bbb; height: 30px; }
+  .qc-sig-hint { font-size: 7.5px; color: #ccc; margin-top: 3px; }
+  .qc-sig-note { margin-top: 16px; font-size: 8.5px; color: #aaa; line-height: 1.6; }
+  .qc-bottom-bar { height: 5px; background: #C9A84C; }
+  .toggle-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle-btn { flex: 1; background: var(--panel); border: 1px solid var(--border); color: var(--text-muted); font-family: 'Barlow', sans-serif; font-size: 13px; padding: 9px; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .toggle-btn.active { background: rgba(201,168,76,0.12); border-color: var(--gold); color: var(--gold); }
+  .calc-result { margin-top: 14px; background: var(--panel); border: 1px solid var(--gold-dim); border-radius: 6px; padding: 14px; }
+  .calc-result-title { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 12px; }
+  .calc-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+  .calc-card { background: var(--charcoal); border: 1px solid var(--border); border-radius: 4px; padding: 10px 6px; text-align: center; }
+  .calc-term { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+  .calc-amount { font-size: 13px; font-weight: 700; color: var(--gold-light); }
+  .calc-note { font-size: 10px; color: var(--text-muted); text-align: center; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--charcoal); border: 1px solid var(--gold); color: var(--white); padding: 14px 22px; border-radius: 6px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; max-width: 90%; line-height: 1.5; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .toast strong { color: var(--gold); }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 1024px) {
+    .layout { grid-template-columns: 360px 1fr; }
+    .form-panel { padding: 28px 22px; }
+  }
+  @media (max-width: 880px) {
+    header { padding: 0 20px; height: 56px; }
+    .brand-name { font-size: 17px; }
+    .brand-sub { font-size: 9px; }
+    .header-badge { display: none; }
+    .layout { grid-template-columns: 1fr; }
+    .form-panel { border-right: none; border-bottom: 1px solid var(--border); padding: 24px 20px; max-height: none; }
+    .preview-panel { padding: 24px 14px; }
+    .preview-label { margin-left: 4px; }
+    .quote-card { max-width: 100%; }
+    .btn-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .qc-header { padding: 14px 18px 12px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .qc-meta { text-align: left; }
+    .qc-doc-band { padding: 10px 18px; }
+    .qc-body { padding: 18px 18px; }
+    .qc-cards { grid-template-columns: 1fr; }
+    .qc-benefits { grid-template-columns: 1fr; }
+    .qc-notes-list { grid-template-columns: 1fr; }
+    .qc-sig-grid { grid-template-columns: 1fr; }
+    .qc-signature-section { padding-left: 18px; padding-right: 18px; }
+    .qc-info-label { width: 100px; font-size: 11px; }
+    .qc-info-val { font-size: 11px; }
+    .generate-btn, .send-btn { font-size: 12px; padding: 14px 8px; letter-spacing: 0.12em; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-bar"></div>
+    <div>
+      <div class="brand-name">QUOTE BUILDER</div>
+      <div class="brand-sub">Operating Rental Proposals</div>
+    </div>
+  </div>
+  <div class="header-badge">Co-Branded · The Rental Company</div>
+</header>
+<div class="layout">
+  <div class="form-panel">
+
+    <div class="panel-title">Your Branding</div>
+    <div class="field-group">
+      <div class="group-label">Logo &amp; Company</div>
+      <div class="field">
+        <label>Supplier Logo (PNG / JPG)</label>
+        <input id="supplierLogo" type="file" accept="image/png,image/jpeg" onchange="onLogoUpload(event)" />
+        <div class="logo-preview-wrap empty" id="logoPreviewWrap">
+          <span id="logoEmptyText">No logo uploaded — quote will use company name only</span>
+          <img id="logoPreviewImg" class="logo-preview-img" hidden alt="Supplier logo" />
+          <button type="button" class="logo-clear-btn" id="logoClearBtn" onclick="clearLogo()" hidden>Remove</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Supplier / Company Name</label>
+        <input id="supplier" type="text" placeholder="e.g. Apex Office Solutions" oninput="update()"/>
+      </div>
+    </div>
+
+    <div class="panel-title">Client Details</div>
+    <div class="field-group">
+      <div class="group-label">Recipient</div>
+      <div class="field"><label>Client / Contact Name</label><input id="clientName" type="text" placeholder="e.g. John Smith" oninput="update()"/></div>
+      <div class="field"><label>Quote Reference (auto)</label><input id="quoteRef" type="text" placeholder="QUO-YYMMDD-NNN" oninput="update()"/></div>
+      <div class="field"><label>Quote Date</label><input id="quoteDate" type="text" placeholder="e.g. 27 April 2026" oninput="update()"/></div>
+    </div>
+    <div class="field-group">
+      <div class="group-label">Deal Details</div>
+      <div class="field">
+        <label>Equipment Description</label>
+        <textarea id="equipment" placeholder="e.g. 1x Generator&#10;1x Forklift&#10;1x Compressor&#10;..." oninput="update()"></textarea>
+      </div>
+      <input id="escalation" type="hidden" value="0%"/>
+    </div>
+    <div class="field-group">
+      <div class="group-label">Pricing Calculator</div>
+      <input id="clientType" type="hidden" value="standard"/>
+      <div class="field"><label>Capital Amount (Excl. VAT)</label><input id="capitalAmount" type="number" placeholder="e.g. 500000" oninput="calcPrices()"/></div>
+      <div class="calc-result" id="calcResult" style="display:none;">
+        <div class="calc-result-title">Calculated Monthly Payment</div>
+        <div class="calc-cards" style="grid-template-columns: 1fr;">
+          <div class="calc-card"><div class="calc-term">Monthly Payment</div><div class="calc-amount" id="calc60">—</div></div>
+        </div>
+        <div class="calc-note">Rates from your calculator · VAT excl.</div>
+      </div>
+    </div>
+    <input type="hidden" id="p36" value=""/>
+    <input type="hidden" id="p48" value=""/>
+    <input type="hidden" id="p60" value=""/>
+
+    <div class="btn-row btn-row-single">
+      <button class="generate-btn" onclick="generatePDF()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        DOWNLOAD QUOTE
+      </button>
+    </div>
+  </div>
+
+  <div class="preview-panel">
+    <div class="preview-label">Live Preview</div>
+    <div class="quote-card" id="previewCard">
+      <div class="qc-top-bar"></div>
+      <div class="qc-header">
+        <div class="qc-supplier-block">
+          <img id="pv-logo" class="qc-supplier-logo" hidden alt="" />
+          <div class="qc-supplier-name" id="pv-supplier-name">[Your Company]</div>
+        </div>
+        <div class="qc-meta">
+          <div class="qc-meta-item">DATE&nbsp;<span class="qc-meta-val" id="pv-date">[Date]</span></div>
+          <div class="qc-meta-item">REF&nbsp;<span class="qc-meta-val" id="pv-ref">[Ref]</span></div>
+        </div>
+      </div>
+      <div class="qc-doc-band">
+        <div class="qc-doc-title">OPERATING RENTAL PROPOSAL</div>
+      </div>
+      <div class="qc-body">
+        <div class="qc-greeting">Dear <strong id="pv-client">[Client]</strong>,</div>
+        <div class="qc-tagline">Thank you for the opportunity. Please find your tailored rental proposal below.</div>
+        <div class="qc-section">
+          <div class="qc-section-title">Deal Overview</div>
+          <div class="qc-info-row"><span class="qc-info-label">Supplier</span><span class="qc-info-val" id="pv-supplier">[Supplier]</span></div>
+          <div class="qc-info-row"><span class="qc-info-label">Equipment</span><span class="qc-info-val" id="pv-equipment">[Equipment]</span></div>
+          <div class="qc-info-row"><span class="qc-info-label">Cycle</span><span class="qc-info-val">Payment in Advance</span></div>
+          <div class="qc-info-row"><span class="qc-info-label">Escalation</span><span class="qc-info-val" id="pv-esc">0%</span></div>
+        </div>
+        <div class="qc-section">
+          <div class="qc-section-title">Monthly Payment (VAT Excl.)</div>
+          <div class="qc-cards" style="grid-template-columns: 1fr;">
+            <div class="qc-price-card"><div class="qc-price-term">Monthly Payment</div><div class="qc-price-amount" id="pv-p60">R 0.00</div></div>
+          </div>
+        </div>
+        <div class="qc-section">
+          <div class="qc-section-title">Why Choose an Operating Rental?</div>
+          <div class="qc-benefits">
+            <div class="qc-benefit"><span class="qc-benefit-title">Cash Flow Preservation</span><span class="qc-benefit-desc">No lump-sum — keep capital in your business</span></div>
+            <div class="qc-benefit"><span class="qc-benefit-title">Balance Sheet Friendly</span><span class="qc-benefit-desc">Potential for limited or no balance sheet impact</span></div>
+            <div class="qc-benefit"><span class="qc-benefit-title">Credit Facility Neutral</span><span class="qc-benefit-desc">No impact on existing credit lines</span></div>
+            <div class="qc-benefit"><span class="qc-benefit-title">VAT Advantage</span><span class="qc-benefit-desc">VAT paid monthly, not upfront</span></div>
+            <div class="qc-benefit"><span class="qc-benefit-title">Tax-Deductible Potential</span><span class="qc-benefit-desc">Monthly premium may qualify as a tax-deductible expense</span></div>
+            <div class="qc-benefit"><span class="qc-benefit-title">No Deposit</span><span class="qc-benefit-desc">Zero upfront — start using equipment day one</span></div>
+          </div>
+        </div>
+        <div class="qc-section">
+          <div class="qc-notes">
+            <div class="qc-notes-title">Please Note</div>
+            <div class="qc-notes-list">
+              <div class="qc-note-item">• Prices subject to rate of exchange</div>
+              <div class="qc-note-item">• Documentation fee applicable</div>
+              <div class="qc-note-item">• Min. 3 years trading preferred</div>
+              <div class="qc-note-item">• Subject to credit approval</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="qc-signature-section">
+        <div class="qc-sig-title">Client Acceptance &amp; Signature</div>
+        <div class="qc-sig-grid">
+          <div class="qc-sig-block">
+            <div class="qc-sig-label">Authorised Signatory (Print Name)</div>
+            <div class="qc-sig-line"></div>
+            <div class="qc-sig-hint">Full name of authorised representative</div>
+          </div>
+          <div class="qc-sig-block">
+            <div class="qc-sig-label">Signature</div>
+            <div class="qc-sig-line"></div>
+            <div class="qc-sig-hint">Signature of authorised representative</div>
+          </div>
+          <div class="qc-sig-block">
+            <div class="qc-sig-label">Designation / Title</div>
+            <div class="qc-sig-line-light"></div>
+            <div class="qc-sig-hint">e.g. Director, CFO, Manager</div>
+          </div>
+          <div class="qc-sig-block">
+            <div class="qc-sig-label">Date</div>
+            <div class="qc-sig-line-light"></div>
+            <div class="qc-sig-hint">DD / MM / YYYY</div>
+          </div>
+        </div>
+        <div class="qc-sig-note">By signing above, the client confirms acceptance of this operating rental proposal, subject to credit approval and the terms and conditions of the rental agreement. This quote is valid for 30 days from date of issue.</div>
+      </div>
+      <div class="qc-bottom-bar"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function v(id){ var el=document.getElementById(id); return el?el.value:''; }
+
+// ==== Logo handling ====
+var supplierLogoDataUrl = null;
+var supplierLogoFormat = 'PNG';
+function onLogoUpload(event){
+  var file = event.target.files && event.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    supplierLogoDataUrl = e.target.result;
+    supplierLogoFormat = (file.type && file.type.indexOf('jpeg')>-1) ? 'JPEG' : 'PNG';
+    var img = document.getElementById('logoPreviewImg');
+    img.src = supplierLogoDataUrl; img.hidden = false;
+    document.getElementById('logoEmptyText').style.display = 'none';
+    document.getElementById('logoClearBtn').hidden = false;
+    document.getElementById('logoPreviewWrap').classList.remove('empty');
+    var pvLogo = document.getElementById('pv-logo');
+    pvLogo.src = supplierLogoDataUrl; pvLogo.hidden = false;
+  };
+  reader.readAsDataURL(file);
+}
+function clearLogo(){
+  supplierLogoDataUrl = null;
+  document.getElementById('supplierLogo').value = '';
+  var img = document.getElementById('logoPreviewImg');
+  img.src = ''; img.hidden = true;
+  document.getElementById('logoEmptyText').style.display = '';
+  document.getElementById('logoClearBtn').hidden = true;
+  document.getElementById('logoPreviewWrap').classList.add('empty');
+  var pvLogo = document.getElementById('pv-logo');
+  pvLogo.src = ''; pvLogo.hidden = true;
+}
+
+// ==== Auto Quote Reference ====
+function dateStrYYMMDD(d){
+  d = d || new Date();
+  var yy = String(d.getFullYear()).slice(2);
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  return yy+mm+dd;
+}
+function nextQuoteRef(){
+  var ds = dateStrYYMMDD();
+  var raw = localStorage.getItem('qb_archive');
+  var archive = raw ? JSON.parse(raw) : [];
+  var maxSeq = 0;
+  archive.forEach(function(e){
+    if(e && e.ref && e.ref.indexOf('QUO-'+ds+'-')===0){
+      var parts = e.ref.split('-');
+      var seq = parseInt(parts[2],10) || 0;
+      if(seq>maxSeq) maxSeq = seq;
+    }
+  });
+  return 'QUO-'+ds+'-'+String(maxSeq+1).padStart(3,'0');
+}
+function todayHumanDate(){
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var d = new Date();
+  return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+}
+
+// ==== Live preview update ====
+function update(){
+  var clientName = v('clientName') || '[Client]';
+  var quoteDate = v('quoteDate') || '[Date]';
+  var quoteRef = v('quoteRef') || '[Ref]';
+  var supplier = v('supplier') || '[Your Company]';
+  var equipment = v('equipment') || '[Equipment]';
+  var escalation = v('escalation') || '0%';
+
+  document.getElementById('pv-client').textContent    = clientName;
+  document.getElementById('pv-date').textContent      = quoteDate;
+  document.getElementById('pv-ref').textContent       = quoteRef;
+  document.getElementById('pv-supplier').textContent  = supplier;
+  document.getElementById('pv-supplier-name').textContent = supplier;
+  document.getElementById('pv-equipment').textContent = equipment;
+  document.getElementById('pv-esc').textContent       = escalation;
+  document.getElementById('pv-p60').textContent       = v('p60') || '—';
+}
+
+const RATES={
+  standard:[[10000,19999,0.03841,0.03200,0.02771],[20000,49999,0.03794,0.03115,0.02700],[50000,99999,0.03680,0.03007,0.02612],[100000,Infinity,0.03560,0.02900,0.02480]],
+  cpa:[[10000,19999,0.04441,0.03807,0.03257],[20000,49999,0.04209,0.03441,0.03014],[50000,99999,0.04122,0.03361,0.02902],[100000,Infinity,0.04082,0.03302,0.02859]]
+};
+function fmtRand(n){return 'R\u00a0'+n.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function calcPrices(){
+  const capital=parseFloat(document.getElementById('capitalAmount').value);
+  const type=document.getElementById('clientType').value;
+  const resultBox=document.getElementById('calcResult');
+  if(!capital||capital<10000){resultBox.style.display='none';['p36','p48','p60'].forEach(id=>document.getElementById(id).value='');update();return;}
+  const table=RATES[type]||RATES.standard;
+  const row=table.find(r=>capital>=r[0]&&capital<=r[1]);
+  if(!row)return;
+  const m36=fmtRand(capital*row[2]),m48=fmtRand(capital*row[3]),m60=fmtRand(capital*row[4]);
+  document.getElementById('calc60').textContent=m60;
+  resultBox.style.display='block';
+  document.getElementById('p36').value=m36;
+  document.getElementById('p48').value=m48;
+  document.getElementById('p60').value=m60;
+  update();
+}
+
+// ==== Toast ====
+function toast(html, ms){
+  var t = document.getElementById('toast');
+  t.innerHTML = html;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, ms||4000);
+}
+
+// ==== PDF generation ====
+async function generatePDF(returnBlob){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,H=297;
+  const GOLD=[201,168,76],TEXT=[20,20,20],MUTED=[110,110,110],MID=[210,210,210],DARK=[26,26,26];
+  const cn=v('clientName'),cd=v('quoteDate')||todayHumanDate(),cr=v('quoteRef'),
+        sup=v('supplier'),eq=v('equipment'),esc=v('escalation'),
+        p36=v('p36'),p48=v('p48'),p60=v('p60');
+  if(!p60){alert('Please enter a capital amount first to calculate pricing.');return null;}
+  if(!cn){alert('Please enter the client name.');return null;}
+
+  // White background
+  doc.setFillColor(255,255,255);doc.rect(0,0,W,H,'F');
+
+  // ===== Page margins =====
+  const ML = 14, MR = 14;
+  const CW = W - ML - MR;
+
+  // ===== TOP GOLD BAR =====
+  doc.setFillColor(...GOLD);doc.rect(0,0,W,5,'F');
+
+  // ===== HEADER (co-branded) — y 5 to 44 =====
+  doc.setFillColor(255,255,255);doc.rect(0,5,W,39,'F');
+
+  // Logo / supplier name LEFT — vertically centered
+  let nameY = 26;
+  if (supplierLogoDataUrl) {
+    try {
+      doc.addImage(supplierLogoDataUrl, supplierLogoFormat, ML, 11, 32, 14, undefined, 'FAST');
+      nameY = 33;
+    } catch(e){ console.warn('Logo embed failed', e); }
+  }
+  doc.setTextColor(...TEXT);doc.setFont('helvetica','bold');doc.setFontSize(13);
+  doc.text(sup||'Your Company', ML, nameY);
+
+  // Date / Ref top right — aligned to baseline of header
+  doc.setTextColor(...MUTED);doc.setFont('helvetica','bold');doc.setFontSize(8);
+  doc.text('DATE:  '+cd,W-MR,22,{align:'right'});
+  doc.text('REF:    '+cr,W-MR,30,{align:'right'});
+
+  // Gold separator under header
+  doc.setDrawColor(...GOLD);doc.setLineWidth(0.8);doc.line(0,44,W,44);
+
+  // ===== DOC TITLE BAND (dark) — y 44 to 56 =====
+  doc.setFillColor(...DARK);doc.rect(0,44,W,12,'F');
+  doc.setTextColor(...GOLD);doc.setFont('helvetica','bold');doc.setFontSize(13);
+  doc.text('OPERATING RENTAL PROPOSAL',ML,52);
+
+  // ===== BODY =====
+  let y=66;
+  doc.setTextColor(...TEXT);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text('Dear '+cn+',',ML,y);y+=6;
+  doc.setTextColor(...MUTED);doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+  doc.text('Thank you for the opportunity. Please find your tailored rental proposal below.',ML,y);y+=12;
+
+  // Reusable section heading
+  function section(title,yPos){
+    doc.setFillColor(...GOLD);doc.rect(ML,yPos-5.5,2.5,8,'F');
+    doc.setTextColor(...TEXT);doc.setFont('helvetica','bold');doc.setFontSize(9);
+    doc.text(title,ML+4.5,yPos);
+    doc.setDrawColor(...MID);doc.setLineWidth(0.4);doc.line(ML,yPos+2.5,W-MR,yPos+2.5);
+  }
+  function infoRow(label,val,yPos){
+    doc.setTextColor(...MUTED);doc.setFont('helvetica','bold');doc.setFontSize(8);
+    doc.text(label,ML+2,yPos);
+    doc.setTextColor(...TEXT);doc.setFont('helvetica','normal');doc.setFontSize(8);
+    const lines=doc.splitTextToSize(String(val||'—'),CW-50);
+    doc.text(lines,ML+48,yPos);
+    const rowH=Math.max(6,lines.length*5)+1;
+    doc.setDrawColor(235,235,235);doc.setLineWidth(0.3);doc.line(ML+2,yPos+rowH-0.5,W-MR-2,yPos+rowH-0.5);
+    return rowH;
+  }
+
+  // ===== DEAL OVERVIEW =====
+  section('DEAL OVERVIEW',y);y+=8;
+  y+=infoRow('Supplier',sup,y);
+  y+=infoRow('Equipment',eq,y);
+  y+=infoRow('Cycle','Payment in Advance',y);
+  y+=infoRow('Escalation',esc,y);y+=8;
+
+  // ===== MONTHLY PAYMENT =====
+  section('MONTHLY PAYMENT  (VAT Excluded)',y);y+=10;
+  const cw = CW * 0.62;
+  const ch = 28;
+  const cx = ML + (CW - cw)/2;
+  doc.setFillColor(201,168,76);
+  doc.roundedRect(cx,y,cw,ch,2,2,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(8);
+  doc.setTextColor(40,30,5);doc.text('MONTHLY PAYMENT',cx+cw/2,y+8,{align:'center'});
+  doc.setFontSize(17);doc.setTextColor(20,15,0);doc.text(p60,cx+cw/2,y+21,{align:'center'});
+  y+=ch+8;
+
+  // ===== WHY CHOOSE =====
+  section('WHY CHOOSE AN OPERATING RENTAL?',y);y+=10;
+  const benefits = [
+    ['Cash Flow Preservation','No lump-sum — keep capital working.'],
+    ['Balance Sheet Friendly','Potential for limited or no balance sheet impact.'],
+    ['Credit Facility Neutral','Zero impact on existing credit lines.'],
+    ['VAT Advantage','VAT paid monthly, not upfront.'],
+    ['Tax-Deductible Potential','Monthly premium may qualify as a tax-deductible expense.'],
+    ['No Deposit','Zero upfront — start using equipment day one.']
+  ];
+  const bColW = CW/2;
+  const bRowH = 11;
+  benefits.forEach(([title,desc],idx)=>{
+    const col = idx%2;
+    const row = Math.floor(idx/2);
+    const bx = ML + col*bColW;
+    const by = y + row*bRowH;
+    doc.setTextColor(...GOLD);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.text(title,bx,by);
+    doc.setTextColor(...MUTED);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.text(desc,bx,by+4);
+  });
+  y+=Math.ceil(benefits.length/2)*bRowH+4;
+
+  // ===== PLEASE NOTE =====
+  const noteH = 20;
+  doc.setFillColor(248,248,248);doc.roundedRect(ML,y,CW,noteH,2,2,'F');
+  doc.setFillColor(...GOLD);doc.rect(ML,y,3,noteH,'F');
+  doc.setTextColor(120,90,20);doc.setFont('helvetica','bold');doc.setFontSize(7.5);
+  doc.text('PLEASE NOTE',ML+7,y+6);
+  doc.setTextColor(...MUTED);doc.setFont('helvetica','normal');doc.setFontSize(7);
+  const noteItems = [
+    'Prices indicative, subject to rate of exchange.',
+    'Documentation fee applicable on commencement.',
+    'Min. 3 years trading preferred. Subject to credit approval.',
+    'Quote valid 30 days from date of issue.'
+  ];
+  // Two-column layout: items 0,2 left; items 1,3 right
+  const noteColX = [ML+7, ML+7+CW/2];
+  const noteRowY = [y+11, y+15];
+  noteItems.forEach((n,i)=>{
+    const col = i%2, row = Math.floor(i/2);
+    doc.text('• '+n, noteColX[col], noteRowY[row]);
+  });
+  y += noteH + 6;
+
+  // ===== SIGNATURE =====
+  section('CLIENT ACCEPTANCE & SIGNATURE',y);y+=10;
+  const sigW = (CW-8)/2;
+  // Row 1
+  [[ML,'Authorised Signatory (Print Name)'],[ML+sigW+8,'Signature']].forEach(([sx,sl])=>{
+    doc.setTextColor(...MUTED);doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.text(sl,sx,y);
+    doc.setDrawColor(60,60,60);doc.setLineWidth(0.4);doc.line(sx,y+9,sx+sigW,y+9);
+  });
+  y+=14;
+  // Row 2
+  [[ML,'Designation / Title'],[ML+sigW+8,'Date (DD / MM / YYYY)']].forEach(([sx,sl])=>{
+    doc.setTextColor(...MUTED);doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.text(sl,sx,y);
+    doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);doc.line(sx,y+9,sx+sigW,y+9);
+  });
+  y+=13;
+  doc.setTextColor(170,170,170);doc.setFont('helvetica','normal');doc.setFontSize(6.5);
+  doc.text('By signing above, the client confirms acceptance of this proposal subject to credit approval and the rental agreement T&Cs.',ML,y);
+
+  // Gold bottom bar
+  doc.setFillColor(...GOLD);doc.rect(0,H-5,W,5,'F');
+
+  // Build filename
+  const safeName=(cn||'Client').replace(/[^a-z0-9]/gi,'_');
+  const safeDate=(cd||'NoDate').replace(/[^a-z0-9]/gi,'_');
+  const filename='Quote_'+safeName+'_'+safeDate+'.pdf';
+
+  saveToArchive(filename, cn, cd, cr, sup, p48);
+  if(returnBlob){
+    return { blob: doc.output('blob'), filename: filename };
+  }
+  doc.save(filename);
+  return { filename: filename };
+}
+
+// ==== Send to Matt ====
+async function sendToTRC(){
+  var result = await generatePDF(true);
+  if(!result) return;
+  // Trigger download separately so user has the file to attach
+  var a = document.createElement('a');
+  var url = URL.createObjectURL(result.blob);
+  a.href = url; a.download = result.filename; a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+
+  var cn = v('clientName')||'Client',
+      cr = v('quoteRef')||'NoRef',
+      sup = v('supplier')||'Supplier',
+      cap = v('capitalAmount')||'?',
+      eq = v('equipment')||'',
+      p36 = v('p36')||'—',
+      p48 = v('p48')||'—',
+      p60 = v('p60')||'—';
+  var subject = 'Quote '+cr+' — '+cn+' — '+sup;
+  var bodyLines = [
+    'Hi Matt,',
+    '',
+    'Quote attached for '+cn+'. Please advise on next steps from your side.',
+    '',
+    '— DEAL SUMMARY —',
+    'Quote Ref:        '+cr,
+    'Client:           '+cn,
+    'Supplier:         '+sup,
+    'Capital (excl VAT): R'+cap,
+    '',
+    'Monthly Rental Options (VAT excl.):',
+    '  36 months:  '+p36,
+    '  48 months:  '+p48,
+    '  60 months:  '+p60,
+    '',
+    'Equipment:',
+    eq,
+    '',
+    '— WHAT WE NEED FROM HERE —',
+    'Please confirm what you need from the client to move to application:',
+    '  • Signed credit application',
+    '  • 3 or 6 months bank statements',
+    '  • Latest financials / management accounts',
+    '  • Copy of ID',
+    '  • Anything else?',
+    '',
+    'How long for credit approval and what is the next step once approved?',
+    '',
+    '*** REMINDER: PLEASE ATTACH YOUR ORIGINAL QUOTE TO THE CLIENT ***',
+    '',
+    'Thanks,',
+    sup
+  ];
+  var body = bodyLines.join('\r\n');
+
+  setTimeout(function(){
+    var mailto = 'mailto:mattl@rental.co.za?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    window.location.href = mailto;
+  }, 600);
+
+  toast('<strong>Rental quote downloaded.</strong> Email opened to Matt — <strong>REMINDER: attach your original quote to the client</strong> before sending.', 8000);
+}
+
+// ==== Archive ====
+function saveToArchive(filename, client, date, ref, supplier, p48){
+  const entry = { filename, client: client||'Unknown', date: date||'—', ref: ref||'—', supplier: supplier||'—', p48: p48||'—', savedAt: new Date().toISOString() };
+  const raw = localStorage.getItem('qb_archive');
+  const list = raw ? JSON.parse(raw) : [];
+  list.unshift(entry);
+  localStorage.setItem('qb_archive', JSON.stringify(list));
+}
+
+// ==== Initialise ====
+(function init(){
+  // Auto-fill date if empty
+  var dateEl = document.getElementById('quoteDate');
+  if(!dateEl.value) dateEl.value = todayHumanDate();
+  // Auto-fill quote ref
+  var refEl = document.getElementById('quoteRef');
+  if(!refEl.value) refEl.value = nextQuoteRef();
+  update();
+})();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js");}</script></body>
+</html>
